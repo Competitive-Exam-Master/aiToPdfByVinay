@@ -16,7 +16,7 @@
             gap: 15px;
         }
 
-        /* NEW: Dark mode styles */
+        /* Dark mode styles */
         body.dark-mode {
             background-color: #121212;
             color: #e0e0e0;
@@ -48,9 +48,14 @@
             background-color: #2c2c2c;
             border-color: #555;
         }
-        /* NEW: Invert colors for dark mode a tags to be visible */
+        /* Invert colors for dark mode a tags to be visible */
         body.dark-mode a {
           color: #bb86fc;
+        }
+
+        /* New on-screen grayscale styles */
+        body.grayscale-print #rendered-output {
+            filter: grayscale(100%);
         }
 
         .header {
@@ -251,7 +256,7 @@
             body {
                 padding: 0;
                 margin: 0;
-                /* NEW: Force white background and dark text for printing, regardless of theme */
+                /* Force white background and dark text for printing, regardless of theme */
                 background-color: white !important;
                 color: black !important;
             }
@@ -266,7 +271,7 @@
                 box-shadow: none;
             }
             
-            /* NEW: Grayscale print specific styles */
+            /* Grayscale print specific styles */
             body.grayscale-print h1,
             body.grayscale-print h2,
             body.grayscale-print h3,
@@ -278,7 +283,7 @@
                 background-color: transparent !important;
             }
 
-            /* NEW: Ensures MathJax renders in black and white */
+            /* Ensures MathJax renders in black and white */
             body.grayscale-print .MathJax {
                 color: black !important;
             }
@@ -357,7 +362,7 @@
                 </div>
                 <div>
                     <label for="math-color">MathJax Color:</label>
-                    <input type="color" id="math-color" value="#0000ff">
+                    <input type="color" id="math-color" value="#555555">
                 </div>
                 <div>
                     <label for="math-size">MathJax Size (em):</label>
@@ -370,10 +375,19 @@
                 <div>
                     <label>Print Type:</label>
                     <div class="radio-group">
-                        <input type="radio" id="color-print" name="print-type" value="color">
+                        <input type="radio" id="color-print" name="print-type" value="color" checked>
                         <label for="color-print">Color Print</label>
                         <input type="radio" id="grayscale-print" name="print-type" value="grayscale">
-                        <label for="grayscale-print">Grayscale Print</label>
+                        <label for="grayscale-print">Black & White Print</label>
+                    </div>
+                </div>
+                <div>
+                    <label>MathJax Weight:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="math-weight-normal" name="math-weight" value="normal">
+                        <label for="math-weight-normal">Normal</label>
+                        <input type="radio" id="math-weight-bold" name="math-weight" value="bold">
+                        <label for="math-weight-bold">Bold</label>
                     </div>
                 </div>
             </div>
@@ -416,8 +430,8 @@
         const saveBtn = document.getElementById('save-settings-btn');
         const generateTocCheckbox = document.getElementById('generate-toc-checkbox');
         const themeRadios = document.getElementsByName('theme');
-        // NEW: Get the print type radios
         const printTypeRadios = document.getElementsByName('print-type');
+        const mathWeightRadios = document.getElementsByName('math-weight');
 
         let isEditorView = true;
 
@@ -520,7 +534,7 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
             document.getElementById('h2-size').value = settings.h2Size || 24;
             document.getElementById('h3-size').value = settings.h3Size || 20;
             document.getElementById('bold-color').value = settings.boldColor || '#000000';
-            document.getElementById('math-color').value = settings.mathColor || '#0000ff';
+            document.getElementById('math-color').value = settings.mathColor || '#555555';
             document.getElementById('math-size').value = settings.mathSize || 1;
             
             generateTocCheckbox.checked = settings.generateToc || false;
@@ -529,9 +543,12 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
             document.getElementById(`${theme}-theme`).checked = true;
             document.body.classList.toggle('dark-mode', theme === 'dark');
 
-            // NEW: Load print type setting
             const printType = settings.printType || 'color';
             document.getElementById(`${printType}-print`).checked = true;
+            document.body.classList.toggle('grayscale-print', printType === 'grayscale');
+
+            const mathWeight = settings.mathWeight || 'normal';
+            document.getElementById(`math-weight-${mathWeight}`).checked = true;
         }
 
         function applyCustomStyles() {
@@ -544,7 +561,11 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
                 #rendered-output h3 { color: ${settings.h3Color || '#555'}; font-size: ${settings.h3Size || 20}px; }
                 #rendered-output em, #rendered-output i { color: ${settings.italicsColor || '#777'}; }
                 #rendered-output strong { color: ${settings.boldColor || '#000'}; }
-                #rendered-output .MathJax { color: ${settings.mathColor || '#00f'}; font-size: ${settings.mathSize || 1}em; }
+                #rendered-output .MathJax { 
+                    color: ${settings.mathColor || '#555'}; 
+                    font-size: ${settings.mathSize || 1}em;
+                    font-weight: ${settings.mathWeight || 'normal'};
+                }
             `;
             const styleTag = document.getElementById('custom-styles') || document.createElement('style');
             styleTag.id = 'custom-styles';
@@ -554,8 +575,8 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
 
         function saveSettings() {
             const theme = document.querySelector('input[name="theme"]:checked').value;
-            // NEW: Get the selected print type
             const printType = document.querySelector('input[name="print-type"]:checked').value;
+            const mathWeight = document.querySelector('input[name="math-weight"]:checked').value;
 
             const settings = {
                 fontFamily: document.getElementById('font-family-select').value,
@@ -571,14 +592,16 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
                 mathSize: document.getElementById('math-size').value,
                 generateToc: generateTocCheckbox.checked,
                 theme: theme,
-                // NEW: Save print type
-                printType: printType
+                printType: printType,
+                mathWeight: mathWeight
             };
             localStorage.setItem('appSettings', JSON.stringify(settings));
             applyCustomStyles();
             modal.style.display = 'none';
             renderContent();
             document.body.classList.toggle('dark-mode', theme === 'dark');
+            // NEW: Apply grayscale class to body for immediate preview
+            document.body.classList.toggle('grayscale-print', printType === 'grayscale');
         }
 
         // --- Event Listeners ---
@@ -622,17 +645,17 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
                 renderContent();
             }
             
-            // NEW: Add a class to the body for grayscale printing if selected
-            const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
-            if (settings.printType === 'grayscale') {
-                document.body.classList.add('grayscale-print');
-            }
+            // This is handled by the saveSettings function now
+            // const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
+            // if (settings.printType === 'grayscale') {
+            //     document.body.classList.add('grayscale-print');
+            // }
 
             window.print();
 
-            // NEW: Remove the class after printing is complete
             window.addEventListener('afterprint', () => {
-                document.body.classList.remove('grayscale-print');
+                // This is also handled by saveSettings when the page loads, so no need to remove it here
+                // document.body.classList.remove('grayscale-print');
             }, { once: true });
         });
 
