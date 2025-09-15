@@ -404,7 +404,8 @@
         // MathJax Configuration
         MathJax = {
             tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']]
+                 inlineMath: [['$', '$']],   // Only $...$ for inline
+            displayMath: [['$$', '$$']] // Only $$...$$ for block
             },
             svg: {
                 fontCache: 'global'
