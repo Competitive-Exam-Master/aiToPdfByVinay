@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,12 +49,34 @@
             background-color: #2c2c2c;
             border-color: #555;
         }
-        /* Invert colors for dark mode a tags to be visible */
         body.dark-mode a {
           color: #bb86fc;
         }
 
-        /* New on-screen grayscale styles */
+        /* Table Styles (Grid Lines) */
+        #rendered-output table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        #rendered-output th, #rendered-output td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        #rendered-output th {
+            background-color: rgba(0, 0, 0, 0.05);
+            font-weight: bold;
+        }
+        body.dark-mode #rendered-output th, 
+        body.dark-mode #rendered-output td {
+            border-color: #444;
+        }
+        body.dark-mode #rendered-output th {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* On-screen grayscale styles */
         body.grayscale-print #rendered-output {
             filter: grayscale(100%);
         }
@@ -77,7 +100,6 @@
 
         .header button {
             padding: 10px 15px;
-            font-size: 16px;
             cursor: pointer;
             border: none;
             border-radius: 5px;
@@ -256,7 +278,6 @@
             body {
                 padding: 0;
                 margin: 0;
-                /* Force white background and dark text for printing, regardless of theme */
                 background-color: white !important;
                 color: black !important;
             }
@@ -271,19 +292,20 @@
                 box-shadow: none;
             }
             
-            /* Grayscale print specific styles */
             body.grayscale-print h1,
             body.grayscale-print h2,
             body.grayscale-print h3,
             body.grayscale-print p,
             body.grayscale-print strong,
             body.grayscale-print em,
-            body.grayscale-print .toc a {
+            body.grayscale-print .toc a,
+            body.grayscale-print th,
+            body.grayscale-print td {
                 color: black !important;
+                border-color: black !important;
                 background-color: transparent !important;
             }
 
-            /* Ensures MathJax renders in black and white */
             body.grayscale-print .MathJax {
                 color: black !important;
             }
@@ -401,21 +423,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        // MathJax Configuration
         MathJax = {
             tex: {
-                 inlineMath: [['$', '$']],   // Only $...$ for inline
-            displayMath: [['$$', '$$']], // Only $$...$$ for block
-processEscapes: true,
-    processEnvironments: true
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: true,
+                processEnvironments: true
             },
-            svg: {
-                fontCache: 'global'
-            },
-            options: {
-                ignoreHtmlClass: 'tex2jax_ignore',
-                processHtmlClass: 'tex2jax_process'
-            }
+            svg: { fontCache: 'global' },
+            options: { ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' }
         };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
@@ -432,43 +448,28 @@ processEscapes: true,
         const closeBtn = document.querySelector('.close-btn');
         const saveBtn = document.getElementById('save-settings-btn');
         const generateTocCheckbox = document.getElementById('generate-toc-checkbox');
-        const themeRadios = document.getElementsByName('theme');
-        const printTypeRadios = document.getElementsByName('print-type');
-        const mathWeightRadios = document.getElementsByName('math-weight');
 
         let isEditorView = true;
 
         const testMarkdown = `# My Markdown Document
 
-This is a paragraph with some **bold** text and some *italic* text. You can use markdown to easily format your documents.
+This is a table with grid lines:
 
-## Lists
-
-Here are some lists:
-
-* Item one
-* Item two
-    * Sub-item A
-    * Sub-item B
-* Item three
+| Feature | Description | Status |
+| :--- | :--- | :--- |
+| Table Grid | Now visible | ✅ |
+| MathJax | Inline $E=mc^2$ | ✅ |
+| Themes | Light/Dark | ✅ |
 
 ## Mathematical Formulas
-
-You can also write mathematical expressions using MathJax.
-
-The Pythagorean theorem is $a^2 + b^2 = c^2$.
-
-A more complex equation is the quadratic formula:
 
 $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
 
         function generateToc() {
             const headings = output.querySelectorAll('h1, h2, h3');
             if (headings.length === 0) return '';
-            
             let tocHtml = '<div class="toc"><h4>Table of Contents</h4><ul>';
             let idCounter = 0;
-            
             headings.forEach(heading => {
                 const text = heading.textContent;
                 const level = heading.tagName.toLowerCase();
@@ -476,7 +477,6 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
                 heading.id = id;
                 tocHtml += `<li style="padding-left: ${(level.charCodeAt(0) - 'h'.charCodeAt(0)) * 15}px;"><a href="#${id}">${text}</a></li>`;
             });
-
             tocHtml += '</ul></div>';
             return tocHtml;
         }
@@ -484,50 +484,33 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
         function renderContent() {
             const markdownText = editor.value;
             const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
-
             const processedText = markdownText.replace(/\n\n\n+/g, match => {
                 let extraBreaks = '<br>'.repeat(Math.floor((match.length - 2) / 2));
                 return '\n\n' + extraBreaks + '\n\n';
             });
-
             const renderedHtml = marked.parse(processedText, { breaks: true });
-            
             if (settings.generateToc) {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = renderedHtml;
                 document.body.appendChild(tempDiv);
-                
                 const tocHtml = generateToc(tempDiv);
                 output.innerHTML = tocHtml + renderedHtml;
-                
                 document.body.removeChild(tempDiv);
             } else {
                 output.innerHTML = renderedHtml;
             }
-            
             applyCustomStyles();
-            
-            if (window.MathJax) {
-                MathJax.typesetPromise([output]);
-            }
+            if (window.MathJax) { MathJax.typesetPromise([output]); }
         }
 
-        // --- Persistence Functions ---
-        function saveEditorContent() {
-            localStorage.setItem('markdownContent', editor.value);
-        }
-
+        function saveEditorContent() { localStorage.setItem('markdownContent', editor.value); }
         function loadEditorContent() {
             const savedContent = localStorage.getItem('markdownContent');
-            if (savedContent) {
-                editor.value = savedContent;
-            }
+            if (savedContent) editor.value = savedContent;
         }
 
-        // --- Settings Functionality ---
         function loadSettings() {
             const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
-            
             document.getElementById('font-family-select').value = settings.fontFamily || 'Arial, sans-serif';
             document.getElementById('h1-color').value = settings.h1Color || '#333333';
             document.getElementById('h2-color').value = settings.h2Color || '#444444';
@@ -539,24 +522,19 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
             document.getElementById('bold-color').value = settings.boldColor || '#000000';
             document.getElementById('math-color').value = settings.mathColor || '#555555';
             document.getElementById('math-size').value = settings.mathSize || 1;
-            
             generateTocCheckbox.checked = settings.generateToc || false;
-            
             const theme = settings.theme || 'light';
             document.getElementById(`${theme}-theme`).checked = true;
             document.body.classList.toggle('dark-mode', theme === 'dark');
-
             const printType = settings.printType || 'color';
             document.getElementById(`${printType}-print`).checked = true;
             document.body.classList.toggle('grayscale-print', printType === 'grayscale');
-
             const mathWeight = settings.mathWeight || 'normal';
             document.getElementById(`math-weight-${mathWeight}`).checked = true;
         }
 
         function applyCustomStyles() {
             const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
-            
             const styles = `
                 #rendered-output { font-family: ${settings.fontFamily || 'Arial, sans-serif'}; }
                 #rendered-output h1 { color: ${settings.h1Color || '#333'}; font-size: ${settings.h1Size || 28}px; }
@@ -569,6 +547,10 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
                     font-size: ${settings.mathSize || 1}em;
                     font-weight: ${settings.mathWeight || 'normal'};
                 }
+                body.grayscale-print #rendered-output th,
+                body.grayscale-print #rendered-output td {
+                    border-color: black !important;
+                }
             `;
             const styleTag = document.getElementById('custom-styles') || document.createElement('style');
             styleTag.id = 'custom-styles';
@@ -580,7 +562,6 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
             const theme = document.querySelector('input[name="theme"]:checked').value;
             const printType = document.querySelector('input[name="print-type"]:checked').value;
             const mathWeight = document.querySelector('input[name="math-weight"]:checked').value;
-
             const settings = {
                 fontFamily: document.getElementById('font-family-select').value,
                 h1Color: document.getElementById('h1-color').value,
@@ -603,83 +584,27 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
             modal.style.display = 'none';
             renderContent();
             document.body.classList.toggle('dark-mode', theme === 'dark');
-            // NEW: Apply grayscale class to body for immediate preview
             document.body.classList.toggle('grayscale-print', printType === 'grayscale');
         }
 
-        // --- Event Listeners ---
-        editor.addEventListener('input', () => {
-            renderContent();
-            saveEditorContent();
-        });
-
+        editor.addEventListener('input', () => { renderContent(); saveEditorContent(); });
         toggleBtn.addEventListener('click', () => {
             isEditorView = !isEditorView;
-            if (isEditorView) {
-                editor.style.display = 'block';
-                output.style.display = 'none';
-                toggleBtn.textContent = '↔️';
-            } else {
-                editor.style.display = 'none';
-                output.style.display = 'block';
-                renderContent();
-                toggleBtn.textContent = '↔️';
-            }
+            editor.style.display = isEditorView ? 'block' : 'none';
+            output.style.display = isEditorView ? 'none' : 'block';
+            if (!isEditorView) renderContent();
         });
-        
-        addTestBtn.addEventListener('click', () => {
-            editor.value = testMarkdown;
-            renderContent();
-            saveEditorContent();
-            modal.style.display = 'none';
-        });
-
-        clearBtn.addEventListener('click', () => {
-            editor.value = '';
-            renderContent();
-            saveEditorContent();
-        });
-
+        addTestBtn.addEventListener('click', () => { editor.value = testMarkdown; renderContent(); saveEditorContent(); modal.style.display = 'none'; });
+        clearBtn.addEventListener('click', () => { editor.value = ''; renderContent(); saveEditorContent(); });
         printBtn.addEventListener('click', () => {
-            if (isEditorView) {
-                isEditorView = false;
-                editor.style.display = 'none';
-                output.style.display = 'block';
-                renderContent();
-            }
-            
-            // This is handled by the saveSettings function now
-            // const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
-            // if (settings.printType === 'grayscale') {
-            //     document.body.classList.add('grayscale-print');
-            // }
-
+            if (isEditorView) { isEditorView = false; editor.style.display = 'none'; output.style.display = 'block'; renderContent(); }
             window.print();
-
-            window.addEventListener('afterprint', () => {
-                // This is also handled by saveSettings when the page loads, so no need to remove it here
-                // document.body.classList.remove('grayscale-print');
-            }, { once: true });
         });
-
-        settingsBtn.addEventListener('click', () => {
-            loadSettings();
-            modal.style.display = 'block';
-        });
-
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-        
-        window.addEventListener('click', (event) => {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        });
-
+        settingsBtn.addEventListener('click', () => { loadSettings(); modal.style.display = 'block'; });
+        closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+        window.addEventListener('click', (e) => { if (e.target == modal) modal.style.display = 'none'; });
         saveBtn.addEventListener('click', saveSettings);
         
-        // Initial setup
         loadSettings();
         loadEditorContent();
         renderContent();
