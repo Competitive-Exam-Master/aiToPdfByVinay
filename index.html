@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -316,12 +315,16 @@
 
     <div class="header">
         <div class="toolbar-buttons">
-            <button id="toggle-view-btn">↔️</button>
-            <button id="clear-btn">🗑️</button>
-            <button id="print-btn">🖨️</button>
-            <button id="settings-btn">⚙️</button>
+            <button id="toggle-view-btn" title="Toggle View">↔️</button>
+            <button id="clear-btn" title="Clear All">🗑️</button>
+            <button id="open-btn" title="Open File">📂</button>
+            <button id="download-btn" title="Download MD">💾</button>
+            <button id="print-btn" title="Print/PDF">🖨️</button>
+            <button id="settings-btn" title="Settings">⚙️</button>
         </div>
     </div>
+
+    <input type="file" id="file-input" accept=".md,.txt" style="display: none;">
 
     <textarea id="markdown-editor" placeholder="Start typing your markdown here..."></textarea>
     <div id="rendered-output"></div>
@@ -442,6 +445,9 @@
         const toggleBtn = document.getElementById('toggle-view-btn');
         const addTestBtn = document.getElementById('add-test-btn');
         const clearBtn = document.getElementById('clear-btn');
+        const openBtn = document.getElementById('open-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const fileInput = document.getElementById('file-input');
         const printBtn = document.getElementById('print-btn');
         const settingsBtn = document.getElementById('settings-btn');
         const modal = document.getElementById('settings-modal');
@@ -587,6 +593,38 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
             document.body.classList.toggle('grayscale-print', printType === 'grayscale');
         }
 
+        // --- New File Operations ---
+        downloadBtn.addEventListener('click', () => {
+            const text = editor.value;
+            const blob = new Blob([text], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        openBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                editor.value = e.target.result;
+                renderContent();
+                saveEditorContent();
+            };
+            reader.readAsText(file);
+            // Reset input so the same file can be opened again
+            event.target.value = '';
+        });
+
         editor.addEventListener('input', () => { renderContent(); saveEditorContent(); });
         toggleBtn.addEventListener('click', () => {
             isEditorView = !isEditorView;
@@ -611,3 +649,4 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
     </script>
 </body>
 </html>
+
