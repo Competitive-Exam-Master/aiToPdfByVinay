@@ -309,6 +309,12 @@
                 color: black !important;
             }
         }
+
+        /* --- FIX: CSS for Hindi Ligatures in MathJax --- */
+        mjx-utext {
+            display: inline !important;
+            font-family: inherit !important;
+        }
     </style>
 </head>
 <body>
@@ -426,6 +432,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
+        /* --- FIX: Updated MathJax Configuration for Hindi --- */
         MathJax = {
             tex: {
                 inlineMath: [['$', '$']],
@@ -433,7 +440,10 @@
                 processEscapes: true,
                 processEnvironments: true
             },
-            svg: { fontCache: 'global' },
+            svg: { 
+                fontCache: 'global',
+                mtextInheritFont: true /* Forces browser font for \text{} to fix Hindi "o" */
+            },
             options: { ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' }
         };
     </script>
@@ -649,4 +659,3 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
     </script>
 </body>
 </html>
-
