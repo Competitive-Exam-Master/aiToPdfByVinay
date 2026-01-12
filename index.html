@@ -309,7 +309,7 @@
                 color: black !important;
             }
         }
-
+        
         /* --- FIX: CSS for Hindi Ligatures in MathJax --- */
         mjx-utext {
             display: inline !important;
@@ -432,7 +432,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        /* --- FIX: Updated MathJax Configuration for Hindi --- */
+        /* --- FIX: Updated MathJax Configuration --- */
         MathJax = {
             tex: {
                 inlineMath: [['$', '$']],
@@ -497,10 +497,26 @@ $$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$`;
             return tocHtml;
         }
 
+        /* --- FIX: Updated Render Function with Auto-Escaping --- */
         function renderContent() {
             const markdownText = editor.value;
             const settings = JSON.parse(localStorage.getItem('appSettings')) || {};
-            const processedText = markdownText.replace(/\n\n\n+/g, match => {
+            
+            // --- AUTO-ESCAPE LOGIC START ---
+            let processedText = markdownText.replace(/(\$\$?)([\s\S]*?)\1/g, (match, delimiter, mathContent) => {
+                let fixedContent = mathContent
+                    // 1. Fix Comments: Replace unescaped % with \%
+                    .replace(/\\%/g, '%').replace(/%/g, '\\\\%')
+                    // 2. Fix Macros: Replace unescaped # with \#
+                    .replace(/\\#/g, '#').replace(/#/g, '\\\\#')
+                    // 3. Fix Rupee: Wrap ₹ in \text{} so it uses the system font
+                    .replace(/₹/g, '\\text{₹}');
+
+                return delimiter + fixedContent + delimiter;
+            });
+            // --- AUTO-ESCAPE LOGIC END ---
+
+            processedText = processedText.replace(/\n\n\n+/g, match => {
                 let extraBreaks = '<br>'.repeat(Math.floor((match.length - 2) / 2));
                 return '\n\n' + extraBreaks + '\n\n';
             });
